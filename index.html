@@ -43,10 +43,23 @@
     const W=520,H=800, floor=62, octo={x:145,y:350,r:24,vy:0,tilt:0,swim:0};
     const startPanel=document.getElementById('startPanel'), overPanel=document.getElementById('overPanel');
     const scoreEl=document.getElementById('score'), bestEl=document.getElementById('best'), finalEl=document.getElementById('finalScore');
-    let state='ready', score=0, best=+localStorage.getItem('octo-best')||0, obstacles=[], bubbles=[], last=0, spawn=0, animation;
+    let state='ready', score=0, best=+localStorage.getItem('octo-best')||0, obstacles=[], bubbles=[], last=0, spawn=0, animation, audioContext;
     const seaLife=[{x:430,y:158,s:.42,c:'#ffd36c',phase:0},{x:80,y:250,s:.28,c:'#ff9c73',phase:2.2},{x:340,y:430,s:.34,c:'#8ee1e8',phase:4.1},{x:455,y:565,s:.25,c:'#ffd36c',phase:5.3}];
     bestEl.textContent=best;
     for(let i=0;i<42;i++) bubbles.push({x:Math.random()*W,y:Math.random()*H,r:1+Math.random()*4,s:.15+Math.random()*.55,a:.12+Math.random()*.32});
+    function unlockAudio(){if(!audioContext){audioContext=new (window.AudioContext||window.webkitAudioContext)()}if(audioContext.state==='suspended')audioContext.resume();}
+    function playSplash(){
+      if(!audioContext||audioContext.state!=='running')return;
+      const now=audioContext.currentTime, duration=.48, length=Math.floor(audioContext.sampleRate*duration), buffer=audioContext.createBuffer(1,length,audioContext.sampleRate), data=buffer.getChannelData(0);let last=0;
+      // Slow, correlated noise becomes a thick watery swish instead of a windy hiss.
+      for(let i=0;i<length;i++){last=last*.91+(Math.random()*2-1)*.12;data[i]=last;}
+      const source=audioContext.createBufferSource(), filter=audioContext.createBiquadFilter(), gain=audioContext.createGain();
+      source.buffer=buffer;filter.type='bandpass';filter.Q.value=.7;
+      // The moving filter and two volume crests create the sensation of water circling a cup.
+      filter.frequency.setValueAtTime(340,now);filter.frequency.exponentialRampToValueAtTime(1500,now+.15);filter.frequency.exponentialRampToValueAtTime(420,now+.31);filter.frequency.exponentialRampToValueAtTime(1050,now+duration);
+      gain.gain.setValueAtTime(.001,now);gain.gain.exponentialRampToValueAtTime(.24,now+.07);gain.gain.exponentialRampToValueAtTime(.07,now+.22);gain.gain.exponentialRampToValueAtTime(.19,now+.34);gain.gain.exponentialRampToValueAtTime(.001,now+duration);
+      source.connect(filter).connect(gain).connect(audioContext.destination);source.start(now);
+    }
     function rounded(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
     function drawBackground(t){
       const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#177b95');g.addColorStop(.5,'#075575');g.addColorStop(1,'#042c54');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -89,9 +102,9 @@
     function collide(o){let cx=Math.max(o.x,Math.min(octo.x,o.x+o.w)), hitX=(octo.x-cx)**2<octo.r**2;return hitX&&(octo.y-octo.r<o.top||octo.y+octo.r>H-floor-o.bottom);}
     function reset(){score=0;obstacles=[];spawn=0;octo.y=350;octo.vy=0;octo.swim=0;scoreEl.textContent=0;}
     function start(){reset();state='playing';startPanel.classList.add('hidden');overPanel.classList.add('hidden');}
-    function flap(){if(state==='ready')start();if(state==='over'){start();}octo.vy=-7.2;octo.swim=1;}
+    function flap(){unlockAudio();if(state==='ready')start();if(state==='over'){start();}octo.vy=-7.2;octo.swim=1;}
     function end(){state='over';best=Math.max(best,score);localStorage.setItem('octo-best',best);bestEl.textContent=best;finalEl.textContent=score;overPanel.classList.remove('hidden');}
-    function update(t){let dt=Math.min((t-last)/16.67,2);last=t;octo.swim=Math.max(0,octo.swim-.08*dt);drawBackground(t);if(state==='playing'){octo.vy+=.42*dt;octo.y+=octo.vy*dt;octo.tilt=Math.max(-.4,Math.min(.65,octo.vy*.07));spawn+=dt;if(spawn>92){addObstacle();spawn=0}obstacles.forEach(o=>{o.x-=3.05*dt;if(!o.scored&&o.x+o.w<octo.x){o.scored=true;score++;scoreEl.textContent=score}drawObstacle(o);if(collide(o))end();});obstacles=obstacles.filter(o=>o.x+o.w>-10);if(octo.y-octo.r<0||octo.y+octo.r>H-floor)end();}else{obstacles.forEach(drawObstacle);octo.tilt=Math.sin(t/500)*.08;octo.y=350+Math.sin(t/650)*8;}drawOctopus();animation=requestAnimationFrame(update);}
+    function update(t){let dt=Math.min((t-last)/16.67,2);last=t;octo.swim=Math.max(0,octo.swim-.08*dt);drawBackground(t);if(state==='playing'){octo.vy+=.42*dt;octo.y+=octo.vy*dt;octo.tilt=Math.max(-.4,Math.min(.65,octo.vy*.07));spawn+=dt;if(spawn>92){addObstacle();spawn=0}obstacles.forEach(o=>{o.x-=3.05*dt;if(!o.scored&&o.x+o.w<octo.x){o.scored=true;score++;scoreEl.textContent=score;playSplash()}drawObstacle(o);if(collide(o))end();});obstacles=obstacles.filter(o=>o.x+o.w>-10);if(octo.y-octo.r<0||octo.y+octo.r>H-floor)end();}else{obstacles.forEach(drawObstacle);octo.tilt=Math.sin(t/500)*.08;octo.y=350+Math.sin(t/650)*8;}drawOctopus();animation=requestAnimationFrame(update);}
     document.getElementById('startButton').onclick=start;document.getElementById('againButton').onclick=start;canvas.addEventListener('pointerdown',flap);window.addEventListener('keydown',e=>{if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();flap()}});requestAnimationFrame(update);
   </script>
 </body>
