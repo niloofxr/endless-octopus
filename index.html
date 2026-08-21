@@ -92,7 +92,7 @@
       for(let x=110;x<W;x+=185){ctx.fillStyle='#ef9b70';ctx.beginPath();ctx.arc(x,H-floor-8,5,0,7);for(let a=0;a<5;a++){ctx.lineTo(x+Math.cos(a*1.256)*11,H-floor-8+Math.sin(a*1.256)*11)}ctx.fill();}
     }
     function drawOctopus(){
-      const time=performance.now()/1000, stroke=Math.max(0,octo.swim), pulse=Math.sin(Math.min(1,stroke)*Math.PI), idle=Math.sin(time*4)*.6;
+      const time=performance.now()/1000, stroke=Math.max(0,octo.swim), pulse=Math.sin(Math.min(1,stroke)*Math.PI), idle=Math.sin(time*4)*.6, blinkPhase=time%2, blink=blinkPhase<.14?Math.sin(blinkPhase/.14*Math.PI):0, eyeOpen=1-blink*.93;
       ctx.save();ctx.translate(octo.x,octo.y);ctx.rotate(octo.tilt);ctx.scale(1+pulse*.09,1-pulse*.06);
       if(level===2){ctx.fillStyle='#c88755';ctx.beginPath();ctx.roundRect(-31,-9,14,25,5);ctx.fill();ctx.strokeStyle='#ecd29b';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='#75402c';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-18,-12);ctx.quadraticCurveTo(-8,-24,2,-17);ctx.stroke();}
       // Eight independently waving tentacles: the swim pulse makes them sweep backward together.
@@ -110,9 +110,9 @@
       // Head speckles and shine lend the character a little more texture.
       ctx.fillStyle='#f4b7ef';[[ -15,-20,2],[ -7,-25,1.5],[11,-22,2],[18,-13,1.3],[-19,-10,1.2]].forEach(p=>{ctx.beginPath();ctx.arc(...p,0,7);ctx.fill()});
       ctx.globalAlpha=.35;ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-11,-16,7,11,-.45,0,7);ctx.fill();ctx.globalAlpha=1;
-      ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-9,-8+idle*.15,8.5,10.5,0,0,7);ctx.ellipse(10,-8+idle*.15,8.5,10.5,0,0,7);ctx.fill();
-      ctx.fillStyle='#173854';ctx.beginPath();ctx.arc(-7,-7+idle*.15,3.5,0,7);ctx.arc(12,-7+idle*.15,3.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-6,-8,1,0,7);ctx.arc(13,-8,1,0,7);ctx.fill();
-      ctx.strokeStyle='#653077';ctx.lineWidth=2.3;ctx.beginPath();ctx.moveTo(-15,-20);ctx.quadraticCurveTo(-9,-23,-4,-20);ctx.moveTo(5,-20);ctx.quadraticCurveTo(11,-23,16,-19);ctx.moveTo(-6,7);ctx.quadraticCurveTo(1,13,9,6);ctx.stroke();ctx.restore();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(-9,-8+idle*.15,8.5,10.5*eyeOpen,0,0,7);ctx.ellipse(10,-8+idle*.15,8.5,10.5*eyeOpen,0,0,7);ctx.fill();
+      ctx.fillStyle='#173854';ctx.beginPath();ctx.ellipse(-7,-7+idle*.15,3.5,3.5*eyeOpen,0,0,7);ctx.ellipse(12,-7+idle*.15,3.5,3.5*eyeOpen,0,0,7);ctx.fill();if(eyeOpen>.2){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-6,-8,1*eyeOpen,0,7);ctx.arc(13,-8,1*eyeOpen,0,7);ctx.fill();}
+      if(level===1&&state!=='reunion'&&state!=='complete'){ctx.strokeStyle='#653077';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(-16,-19);ctx.quadraticCurveTo(-10,-24,-5,-20);ctx.moveTo(5,-20);ctx.quadraticCurveTo(11,-24,16,-19);ctx.stroke();ctx.fillStyle='#ef91b5';ctx.globalAlpha=.5;ctx.beginPath();ctx.ellipse(-17,4,5,2.5,0,0,7);ctx.ellipse(18,4,5,2.5,0,0,7);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle='#653077';ctx.beginPath();ctx.ellipse(1,7,3.6,4.5,0,0,7);ctx.fill();}else{ctx.strokeStyle='#653077';ctx.lineWidth=2.3;ctx.beginPath();ctx.moveTo(-15,-20);ctx.quadraticCurveTo(-9,-23,-4,-20);ctx.moveTo(5,-20);ctx.quadraticCurveTo(11,-23,16,-19);ctx.moveTo(-6,7);ctx.quadraticCurveTo(1,13,9,6);ctx.stroke();}ctx.restore();
     }
     function drawFamily(t,arrival=1){
       const relatives=[{x:octo.x+24,y:333,s:1.05,c:'#f48ab9'},{x:octo.x+90,y:370,s:.76,c:'#5bd8c4'},{x:octo.x+148,y:314,s:.9,c:'#f7ab58'},{x:octo.x+186,y:402,s:.62,c:'#7c9cea'}];
